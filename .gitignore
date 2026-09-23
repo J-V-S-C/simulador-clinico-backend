@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Ambientes virtuais e variáveis locais
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Ferramentas e editores locais
+.agents/
+.codex/
+.kilo/
+.idea/
+.vscode/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+data/
