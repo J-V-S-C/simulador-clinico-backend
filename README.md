@@ -1,229 +1,150 @@
 # Simulador clínico — Sprint 3
 
-Aplicação educacional em Python na qual um estudante realiza uma simulação textual de atendimento clínico. Durante a experiência, ele acompanha o estado do paciente, consulta protocolos progressivamente, registra condutas e observa a evolução dos sintomas e sinais vitais.
+## Sobre o projeto
 
-Esta versão corresponde à entrega da Sprint 3 de Computational Thinking with Python. Seu foco é a modelagem, manipulação e persistência dos dados em arquivos CSV, a implementação do fluxo principal e a preparação para integração com a interface e com uma futura LLM.
+Aplicação educacional em Python para simulações textuais e cronometradas de atendimento clínico.
 
-## Ideia da solução
+O estudante interage com um paciente virtual, consulta protocolos e envia condutas. O sistema avalia as interações e atualiza os sintomas e sinais vitais conforme as decisões tomadas e o tempo decorrido.
 
-O estudante inicia um caso clínico cronometrado e interage com um paciente virtual por texto. A futura LLM deverá receber a mensagem do estudante, o estado clínico, o histórico da simulação e a resposta esperada do protocolo. Ela produzirá a resposta do paciente e classificará a conduta como correta, parcialmente correta ou incorreta.
+## Fluxo da simulação
 
-Nesta sprint, essa integração é representada por um mock local. Isso permite navegar e testar todo o fluxo sem depender de uma API externa.
+1. selecionar um caso clínico e definir o limite de tempo;
+2. visualizar o paciente, seus sintomas e sinais vitais;
+3. consultar protocolos em níveis progressivos;
+4. enviar uma conduta em texto;
+5. receber a resposta do paciente e a avaliação da conduta;
+6. avançar o tempo e acompanhar a evolução clínica;
+7. encerrar a simulação ou aguardar um encerramento automático;
+8. visualizar o resultado e o histórico.
 
-O fluxo implementado é:
+A simulação também termina quando o tempo se esgota ou um sinal vital atinge um valor crítico.
 
-1. O estudante seleciona um caso e define o limite de tempo.
-2. O sistema cria uma cópia independente do paciente, sintomas e sinais vitais.
-3. A interface apresenta o estado clínico inicial.
-4. O estudante pode consultar progressivamente os protocolos.
-5. O estudante envia uma pergunta, orientação ou conduta em texto.
-6. O mock compara o texto com a resposta esperada do protocolo.
-7. O paciente virtual responde e a interação recebe uma classificação tipada.
-8. O efeito clínico correspondente é aplicado ao paciente.
-9. O tempo pode avançar, alterando sintomas e sinais vitais.
-10. A simulação termina por decisão do estudante, tempo esgotado ou agravamento crítico.
-11. O resultado apresenta o desfecho, a evolução clínica e o histórico das interações.
+## Protocolos
 
-## Protocolos em três níveis
+Cada sintoma possui um protocolo apresentado em três níveis:
 
-Cada sintoma possui um protocolo próprio, dividido em três conteúdos:
+1. **Orientação:** indica o que deve ser observado;
+2. **Ajuda:** direciona o estudante sem entregar a resposta;
+3. **Resposta esperada:** contém a conduta correta e serve como referência para avaliar a interação.
 
-1. **Orientação:** chama a atenção para o aspecto clínico que deve ser observado.
-2. **Ajuda:** oferece um direcionamento mais explícito sem entregar toda a resposta.
-3. **Resposta esperada:** contém a conduta completa e funciona como fonte da verdade para a avaliação da LLM.
+Nesta sprint, um mock baseado em palavras-chave representa a futura LLM e classifica a conduta como `correct`, `partially_correct` ou `incorrect`.
 
 ## Estrutura do projeto
 
 ```text
 backend/
-├── application.py
-├── main.py
-├── sample_data.py
+├── application.py           # Fluxo principal da aplicação
+├── main.py                  # Interface Streamlit
+├── sample_data.py           # Caso clínico de demonstração
 ├── requirements.txt
 ├── data/
-│   ├── diseases.csv
-│   ├── simulations.csv
-│   └── reports.csv
+│   ├── diseases.csv         # Casos clínicos
+│   ├── simulations.csv      # Simulações geradas
+│   └── reports.csv          # Denúncias geradas
 ├── models/
-│   └── models.py
+│   └── models.py            # Modelos e regras do simulador
 ├── repositories/
-│   ├── __init__.py
-│   ├── repositories.py
-│   └── serialization.py
+│   ├── repositories.py      # Leitura e gravação dos CSVs
+│   └── serialization.py     # Conversão entre objetos e dados persistíveis
 └── mocks/
-    └── llm_mock.py
+    └── llm_mock.py          # Simulação temporária da LLM
 ```
 
-- `models/`: estruturas e regras do domínio, como paciente, sintoma, protocolo, interação e simulação.
-- `repositories/`: leitura, serialização e persistência em CSV com Pandas.
-- `data/`: arquivos persistidos de casos, simulações e denúncias.
-- `application.py`: casos de uso consumidos pela interface, sem dependência do Streamlit.
-- `main.py`: interface visual e navegação com Streamlit.
-- `sample_data.py`: configuração do caso clínico usado na demonstração.
-- `mocks/llm_mock.py`: substituto temporário da futura integração com uma LLM.
+O código está separado em quatro partes:
 
-## Principais dados modelados
+- `models`: representa doença, paciente, sintomas, sinais vitais, protocolos, interações e simulações;
+- `repositories`: lê e salva os dados;
+- `application.py`: executa os casos de uso sem depender da interface;
+- `main.py`: apresenta o fluxo navegável no Streamlit.
 
-| Modelo             | Responsabilidade                                                            |
-| ------------------ | --------------------------------------------------------------------------- |
-| `Disease`          | Configura a doença, sintomas e sinais vitais iniciais do caso.              |
-| `Patient`          | Mantém o estado clínico atual do paciente virtual.                          |
-| `Symptom`          | Guarda intensidade, gravidade, estado, visibilidade, evolução e protocolo.  |
-| `VitalSign`        | Guarda valor, unidade e limites críticos de um sinal vital.                 |
-| `Protocol`         | Armazena orientação, ajuda, resposta esperada e efeitos clínicos.           |
-| `Interaction`      | Registra texto do estudante, resposta do paciente, sintoma e classificação. |
-| `Report`           | Registra uma denúncia de resposta da IA com o contexto da simulação.        |
-| `Simulation`       | Controla tempo, progresso dos protocolos, interações e encerramento.        |
-| `SimulationResult` | Guarda evolução, tempo, desfecho, feedback e interações finais.             |
+Essa separação permite que uma futura API reutilize a camada de aplicação sem alterar as regras do simulador.
 
-As classificações possíveis são definidas por `InteractionClassification`: `correct`, `partially_correct` e `incorrect`.
+## Persistência dos dados
 
-## Persistência e manipulação
+A persistência utiliza Pandas e arquivos CSV:
 
-Os dados são armazenados em arquivos CSV com Pandas:
+| Arquivo           | Conteúdo                                   |
+| ----------------- | ------------------------------------------ |
+| `diseases.csv`    | Casos clínicos configurados                |
+| `simulations.csv` | Estado completo e histórico das simulações |
+| `reports.csv`     | Denúncias de respostas da IA               |
 
-- `DiseaseRepository` utiliza `data/diseases.csv`;
-- `SimulationRepository` utiliza `data/simulations.csv`;
-- `ReportRepository` utiliza `data/reports.csv`.
+Casos e simulações possuem uma coluna `payload` em JSON para preservar dados aninhados. Os arquivos são recriados automaticamente quando necessário, e uma simulação pode ser recuperada após reiniciar a aplicação.
 
-Casos e simulações possuem estruturas aninhadas. Por isso, cada linha possui um identificador e uma coluna `payload` com JSON. As denúncias utilizam colunas CSV comuns. Essa combinação mantém o formato tabular e preserva todo o estado clínico entre reinicializações do Streamlit.
+Valores clínicos de ponto flutuante são persistidos e exibidos com até duas casas decimais.
 
-O módulo `repositories/serialization.py` converte os modelos em dicionários compatíveis com JSON e recria os objetos ao ler os arquivos. A interface mantém apenas o serviço em `st.session_state`; os dados reais permanecem salvos na pasta `data/`.
+## Interface
 
-Todos os valores clínicos de ponto flutuante são arredondados para no máximo duas casas decimais antes de serem persistidos. Na interface, esses valores são sempre exibidos com duas casas, por exemplo `90.00`, `2.50` e `111.00`.
+A interface Streamlit permite:
 
-## Interface visual
+- iniciar e encerrar uma simulação;
+- visualizar sintomas e sinais vitais;
+- consultar os três níveis dos protocolos;
+- enviar condutas ao paciente virtual;
+- avançar o tempo;
+- consultar o histórico;
+- denunciar uma resposta da IA;
+- visualizar o resultado final.
 
-A interface apresenta:
+## Tecnologias
 
-- resumo de tempo e quantidade de interações;
-- sinais vitais em métricas, com indicação de estabilidade;
-- sintomas em cartões com estado, gravidade e intensidade;
-- progresso individual de cada protocolo;
-- histórico textual de estudante e paciente;
-- telas de protocolo, interação, tempo, denúncia e encerramento;
-- resultado final da simulação.
+- Python 3.10 ou superior;
+- Streamlit;
+- Pandas.
 
-`SimulationService`, em `application.py`, concentra os casos de uso e devolve dicionários simples. Uma futura API poderá chamar os mesmos métodos em suas rotas e transformar as respostas em JSON, sem alterar as regras do domínio.
+## Como executar
 
-## Como instalar e executar
-
-É necessário Python 3.10 ou superior.
+Instale as dependências:
 
 ```bash
 pip install -r requirements.txt
+```
+
+Execute a aplicação:
+
+```bash
 python main.py
 ```
 
-O comando inicia o servidor Streamlit automaticamente. Também é possível executar diretamente:
+Também é possível usar:
 
 ```bash
 streamlit run main.py
 ```
 
-O Streamlit exibirá no terminal o endereço local, normalmente `http://localhost:8501`.
+A interface estará disponível normalmente em `http://localhost:8501`.
 
-## Como testar — roteiro com gabarito
+## Como testar
 
-### 1. Iniciar o caso
-
-Selecione:
-
-- caso: `Síndrome coronariana - caso didático`;
-- limite: `30` minutos.
-
-Estado inicial esperado:
-
-| Dado                  |                             Valor |
-| --------------------- | --------------------------------: |
-| Frequência cardíaca   |                        110.00 bpm |
-| Saturação de oxigênio |                            90.00% |
-| Dor torácica          |  intensidade 8.00, gravidade alta |
-| Falta de ar           | intensidade 5.00, gravidade moderada |
-
-### 2. Testar os níveis do protocolo
-
-Na aba **Protocolos**, selecione `Falta de ar` e pressione três vezes **Revelar próxima parte**.
-
-Conteúdos esperados:
-
-1. `Observe a respiração e a saturação do paciente.`
-2. `Considere uma intervenção para melhorar a oxigenação.`
-3. `Administrar oxigênio e acompanhar a saturação do paciente.`
-
-Uma quarta tentativa deve informar que todos os níveis já foram revelados.
-
-### 3. Testar uma conduta correta para falta de ar
-
-Na aba **Interação**, selecione `Falta de ar` e use este gabarito:
+1. Inicie o caso `Síndrome coronariana - caso didático` com limite de 30 minutos.
+2. Confira o estado inicial: frequência cardíaca `110.00 bpm`, saturação `90.00%`, dor torácica `8.00` e falta de ar `5.00`.
+3. Em **Protocolos**, revele os três níveis de `Falta de ar`.
+4. Em **Interação**, selecione `Falta de ar` e envie:
 
 ```text
 Administrar oxigênio e acompanhar a saturação do paciente.
 ```
 
-Resultado esperado:
+Resultado esperado: classificação `correct`, falta de ar `2.00` e saturação `92.00%`.
 
-- classificação: `correct`;
-- resposta simulada: `Estou me sentindo melhor após a sua conduta.`;
-- intensidade de falta de ar: de 5.00 para 2.00;
-- saturação: de 90.00% para 92.00%.
-
-### 4. Testar uma conduta correta para dor
-
-Selecione `Dor torácica` e use:
+5. Selecione `Dor torácica` e envie:
 
 ```text
 Administrar analgesia adequada e reavaliar a dor do paciente.
 ```
 
-Resultado esperado:
+Resultado esperado: classificação `correct` e dor `3.00`.
 
-- classificação: `correct`;
-- intensidade da dor: de 8.00 para 3.00;
-- gravidade da dor: baixa.
+6. Avance cinco minutos uma única vez.
 
-### 5. Testar uma conduta incorreta
+Resultado esperado: tempo `5`, dor `3.50`, falta de ar `2.50`, frequência cardíaca `111.00 bpm` e saturação `91.50%`.
 
-Inicie outra simulação ou escolha um sintoma ainda não tratado e envie:
+7. Registre uma denúncia e encerre o atendimento. O resultado deve apresentar o desfecho e o histórico das interações.
+8. Para testar o tempo esgotado, inicie outra simulação com limite de um minuto e avance um minuto.
 
-```text
-Apenas aguardar sem realizar nenhuma conduta.
-```
+## Limitações
 
-Resultado esperado:
-
-- classificação: `incorrect`;
-- resposta: `Meu quadro não apresentou melhora com essa conduta.`;
-- nenhum efeito clínico positivo é aplicado.
-
-### 6. Testar a evolução do tempo
-
-Depois de executar as duas condutas corretas, abra a aba **Tempo**, informe `5` e pressione **Avançar tempo** uma vez.
-
-Resultado esperado após a atualização automática da tela:
-
-| Dado                  |  Valor esperado |
-| --------------------- | --------------: |
-| Tempo decorrido       |       5 minutos |
-| Dor torácica          | intensidade 3.50 |
-| Falta de ar           | intensidade 2.50 |
-| Frequência cardíaca   |      111.00 bpm |
-| Saturação de oxigênio |          91.50% |
-
-Isso demonstra que o tempo influencia tanto os sintomas quanto os sinais vitais.
-
-### 7. Testar denúncia e encerramento
-
-Na aba **Denúncia**, registre uma resposta incoerente e descreva o problema. O sistema deve confirmar o registro com o contexto da simulação.
-
-Na aba **Encerrar**, informe um desfecho e feedback. O sistema deve impedir novas interações e apresentar o resultado e o histórico completo.
-
-Para testar o encerramento automático por tempo, inicie uma nova simulação com limite de `1` minuto e avance `1` minuto. O desfecho esperado é `Tempo esgotado`.
-
-## Limitações desta sprint e próximos passos
-
-- O mock usa correspondência de palavras relevantes; ele não possui compreensão clínica real.
-- Existe apenas um caso clínico de demonstração.
-- A LLM real deverá substituir `mocks/llm_mock.py`.
-- Futuras rotas web poderão reutilizar `SimulationService`.
-- Os repositórios CSV poderão ser substituídos por persistência em banco de dados.
+- apenas um caso clínico de demonstração;
+- mock simples no lugar de uma LLM real;
+- persistência local em CSV;
+- sem autenticação ou API web nesta sprint.
