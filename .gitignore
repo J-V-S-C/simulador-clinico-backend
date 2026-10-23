@@ -26,3 +26,5 @@ Thumbs.db
 # Dados gerados durante o uso da aplicação
 data/simulations.csv
 data/reports.csv
+data/*.db
+data/*.db-*

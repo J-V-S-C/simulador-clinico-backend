@@ -1,2 +1,9 @@
-streamlit
-pandas
+fastapi==0.159.0
+uvicorn==0.54.0
+sqlalchemy==2.1.6
+psycopg[binary]>=3.2,<4
+alembic==1.20.0
+pydantic-settings==2.16.1
+google-genai==2.32.0
+pwdlib[argon2]==0.3.1
+email-validator==2.3.0

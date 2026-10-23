@@ -91,7 +91,7 @@ def protocol_from_dictionary(data: dict[str, object]) -> Protocol:
 def symptom_to_dictionary(symptom: Symptom) -> dict[str, object]:
     return {
         "name": symptom.name,
-        "intensity": round(symptom.intensity, 2),
+        "intensity": round(symptom.intensity, 3),
         "state": symptom.state.value,
         "is_visible": symptom.is_visible,
         "is_complex": symptom.is_complex,
@@ -127,7 +127,7 @@ def symptom_from_dictionary(data: dict[str, object]) -> Symptom:
 def vital_sign_to_dictionary(vital_sign: VitalSign) -> dict[str, object]:
     return {
         "name": vital_sign.name,
-        "value": round(vital_sign.value, 2),
+        "value": round(vital_sign.value, 3),
         "unit": vital_sign.unit,
         "minimum_critical_value": (
             round(vital_sign.minimum_critical_value, 2)
@@ -158,6 +158,7 @@ def disease_to_dictionary(disease: Disease) -> dict[str, object]:
     return {
         "name": disease.name,
         "symptoms": [symptom_to_dictionary(item) for item in disease.symptoms],
+        "optional_symptoms": [symptom_to_dictionary(item) for item in disease.optional_symptoms],
         "initial_vital_signs": [
             vital_sign_to_dictionary(item) for item in disease.initial_vital_signs
         ],
@@ -171,6 +172,10 @@ def disease_from_dictionary(data: dict[str, object]) -> Disease:
             symptom_from_dictionary(read_dictionary(item))
             for item in read_list(data.get("symptoms"))
         ],
+        optional_symptoms=[
+            symptom_from_dictionary(read_dictionary(item))
+            for item in read_list(data.get("optional_symptoms"))
+        ],
         initial_vital_signs=[
             vital_sign_from_dictionary(read_dictionary(item))
             for item in read_list(data.get("initial_vital_signs"))
@@ -180,10 +185,13 @@ def disease_from_dictionary(data: dict[str, object]) -> Disease:
 
 def interaction_to_dictionary(interaction: Interaction) -> dict[str, object]:
     return {
+        "id": interaction.id,
         "student_text": interaction.student_text,
         "patient_response": interaction.patient_response,
         "classification": interaction.classification.value,
         "evaluated_symptom_name": interaction.evaluated_symptom_name,
+        "input_tokens": interaction.input_tokens,
+        "output_tokens": interaction.output_tokens,
     }
 
 
@@ -193,6 +201,9 @@ def interaction_from_dictionary(data: dict[str, object]) -> Interaction:
         patient_response=str(data.get("patient_response", "")),
         classification=InteractionClassification(str(data.get("classification"))),
         evaluated_symptom_name=str(data.get("evaluated_symptom_name", "")),
+        interaction_id=str(data["id"]) if data.get("id") else None,
+        input_tokens=int(data.get("input_tokens", 0)),
+        output_tokens=int(data.get("output_tokens", 0)),
     )
 
 
@@ -241,6 +252,8 @@ def simulation_to_dictionary(simulation: Simulation) -> dict[str, object]:
         },
         "time_limit_minutes": simulation.time_limit_minutes,
         "elapsed_time_minutes": simulation.elapsed_time_minutes,
+        "elapsed_time_seconds": simulation.elapsed_time_seconds,
+        "last_effective_action_second": simulation.last_effective_action_second,
         "interactions": [
             interaction_to_dictionary(item) for item in simulation.interactions
         ],
@@ -275,6 +288,9 @@ def simulation_from_dictionary(data: dict[str, object]) -> Simulation:
         simulation_id=str(data.get("id", "")),
     )
     simulation.elapsed_time_minutes = int(data.get("elapsed_time_minutes", 0))
+    simulation.elapsed_time_seconds = int(data.get("elapsed_time_seconds", simulation.elapsed_time_minutes * 60))
+    action_second = data.get("last_effective_action_second")
+    simulation.last_effective_action_second = int(action_second) if action_second is not None else None
     simulation.interactions = [
         interaction_from_dictionary(read_dictionary(item))
         for item in read_list(data.get("interactions"))
@@ -299,7 +315,7 @@ def simulation_from_dictionary(data: dict[str, object]) -> Simulation:
                 for item in read_list(result_data.get("interactions"))
             ],
             clinical_evolution=str(result_data.get("clinical_evolution", "")),
-            time_elapsed=int(result_data.get("time_elapsed", 0)),
+            time_elapsed=float(result_data.get("time_elapsed", 0)),
             definitive_outcome=str(result_data.get("definitive_outcome", "")),
             feedback=str(result_data.get("feedback", "")),
         )
