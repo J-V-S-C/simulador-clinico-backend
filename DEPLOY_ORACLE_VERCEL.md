@@ -36,7 +36,7 @@ Esta é a opção inicial para um projeto educacional pequeno: Next.js na Vercel
 ## 3. Frontend na Vercel
 
 1. Importe o repositório `Simulador-Clinico-Front-End` como projeto Next.js. Se importar um monorepo, selecione essa pasta como **Root Directory**.
-2. Defina no ambiente **Production** `NEXT_PUBLIC_API_BASE_URL=https://seu-simulador.duckdns.org/api`. É a URL pública acessível pelo navegador; `127.0.0.1` apontaria para o computador do estudante. Não adicione `GEMINI_API_KEY` ao frontend.
+2. Defina no ambiente **Production** `API_BASE_URL=https://seu-simulador.duckdns.org/api`. O `next.config.ts` inclui essa URL no código do navegador; `127.0.0.1` apontaria para o computador do estudante. Não adicione `GEMINI_API_KEY` ao frontend.
 3. Faça o deploy. Quando souber a URL final `https://seu-projeto.vercel.app`, coloque-a em `ALLOWED_ORIGINS` no backend e reinicie o serviço. O valor deve ser a **origem exata**, sem `/api` e sem barra final. Se alterar a variável pública da Vercel, gere um novo deployment.
 4. Teste no domínio publicado: cadastro, login, dois estudantes em navegadores separados, início do mesmo caso, resposta em streaming, avanço de tempo, conclusão, resultado e feedback. Verifique CORS no console do navegador e os logs do serviço na VPS.
 

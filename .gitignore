@@ -11,6 +11,10 @@ venv/
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Ferramentas e editores locais
 .agents/
@@ -26,5 +30,7 @@ Thumbs.db
 # Dados gerados durante o uso da aplicação
 data/simulations.csv
 data/reports.csv
-data/*.db
-data/*.db-*
+*.sqlite
+*.sqlite3
+*.db
+*.db-*
