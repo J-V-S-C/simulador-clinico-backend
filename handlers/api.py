@@ -64,7 +64,7 @@ class ApiHandlers:
     def list_simulations(self, user_id: str, limit: int, offset: int) -> list[dict]:
         if not 1 <= limit <= 100 or offset < 0:
             raise ServiceError("invalid_pagination", "Paginação inválida.")
-        return self.simulations.list(user_id, limit, offset)
+        return self.simulations.list_simulations(user_id, limit, offset)
 
     def get_simulation(self, user_id: str, simulation_id: str) -> dict:
         return self.simulations.get(user_id, simulation_id)

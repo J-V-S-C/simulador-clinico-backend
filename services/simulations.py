@@ -1,5 +1,8 @@
 """Simulation use cases. Domain owns clinical transitions."""
 
+from __future__ import annotations
+
+import builtins
 from copy import deepcopy
 from datetime import timedelta
 from math import ceil
@@ -41,7 +44,7 @@ class SimulationService:
             tx.create_simulation(saved)
         return self._view(saved)
 
-    def list(self, owner_id: str, limit: int, offset: int) -> list[dict]:
+    def list_simulations(self, owner_id: str, limit: int, offset: int) -> list[dict]:
         with self.store.transaction() as tx:
             saved_items = tx.list_simulations(owner_id, limit, offset)
             for saved in saved_items:
@@ -164,13 +167,13 @@ class SimulationService:
             return {"interaction_id": interaction.id, "simulation": self._view(saved)}
 
     @staticmethod
-    def _normalized_words(value: str) -> list[str]:
+    def _normalized_words(value: str) -> builtins.list[str]:
         plain = unicodedata.normalize("NFKD", value.casefold())
         plain = "".join(char for char in plain if not unicodedata.combining(char))
         return re.findall(r"[a-z0-9]+", plain)
 
     @classmethod
-    def _term_present(cls, term: str, words: list[str]) -> bool:
+    def _term_present(cls, term: str, words: builtins.list[str]) -> bool:
         term_words = cls._normalized_words(term)
         if not term_words:
             return False
@@ -269,3 +272,6 @@ class SimulationService:
             evolution = "Sintomas ativos: " + (", ".join(item.name for item in simulation.patient.symptoms if item.is_active()) or "nenhum")
         feedback = f"{correct} conduta(s) adequadas e {partial} parcialmente adequadas em {simulation.elapsed_time_minutes} minuto(s)."
         simulation.end(evolution, outcome, feedback)
+
+
+SimulationService.list = SimulationService.list_simulations
