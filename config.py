@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.5-flash-lite"
     allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     gemini_timeout_seconds: float = 15.0
+    admin_username: str = ""
+    admin_password: str = ""
 
     @property
     def api_key(self) -> str | None:

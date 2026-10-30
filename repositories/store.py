@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from ports.storage import SavedSimulation
-from repositories.database import CaseRow, ExperienceFeedbackRow, ReportRow, SimulationRow, TokenRow, UserRow
+from repositories.database import AdminTokenRow, CaseRow, ExperienceFeedbackRow, ReportRow, SimulationRow, TokenRow, UserRow
 from repositories.serialization import disease_from_dictionary, disease_to_dictionary, simulation_from_dictionary, simulation_to_dictionary
 from ports.errors import ServiceError
 
@@ -65,6 +65,42 @@ class SqlTransaction:
         row = self.db.get(TokenRow, token_hash)
         if row:
             self.db.delete(row)
+
+    def create_admin_token(self, token_hash, expires_at):
+        self.db.add(AdminTokenRow(hash=token_hash, expires_at=expires_at))
+
+    def has_admin_token(self, token_hash, now):
+        row = self.db.get(AdminTokenRow, token_hash)
+        if row is None:
+            return False
+        expiry = row.expires_at.replace(tzinfo=timezone.utc) if row.expires_at.tzinfo is None else row.expires_at
+        return expiry > now
+
+    def delete_admin_token(self, token_hash):
+        row = self.db.get(AdminTokenRow, token_hash)
+        if row:
+            self.db.delete(row)
+
+    def list_admin_accounts(self):
+        rows = self.db.scalars(select(UserRow).where(UserRow.disabled.is_(False)).order_by(UserRow.name, UserRow.email)).all()
+        return [{"id": row.id, "name": row.name or "Estudante", "email": row.email} for row in rows]
+
+    def list_admin_feedback(self):
+        rows = self.db.execute(
+            select(ExperienceFeedbackRow, SimulationRow.owner_id, UserRow.name, UserRow.email)
+            .join(SimulationRow, ExperienceFeedbackRow.simulation_id == SimulationRow.id)
+            .join(UserRow, SimulationRow.owner_id == UserRow.id)
+            .where(UserRow.disabled.is_(False))
+            .order_by(ExperienceFeedbackRow.created_at.desc(), ExperienceFeedbackRow.simulation_id.desc())
+        ).all()
+        return [{"simulation_id": feedback.simulation_id, "user_id": owner_id,
+                 "user_name": name or "Estudante", "user_email": email,
+                 "liked": feedback.liked, "clarity": feedback.clarity,
+                 "difficulty": feedback.difficulty,
+                 "useful_feature": feedback.useful_feature,
+                 "improvement": feedback.improvement,
+                 "created_at": feedback.created_at.replace(tzinfo=timezone.utc) if feedback.created_at.tzinfo is None else feedback.created_at}
+                for feedback, owner_id, name, email in rows]
 
     @staticmethod
     def _saved(row):

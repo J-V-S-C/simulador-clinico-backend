@@ -16,6 +16,7 @@ from repositories.database import create_session_factory, run_migrations
 from repositories.store import SqlStore, import_legacy_csv, seed_public_cases
 from routes.api import create_router
 from services.auth import AuthService
+from services.admin import AdminService
 from services.cases import CaseService
 from ports.errors import ServiceError
 from services.reports import ReportService
@@ -35,6 +36,7 @@ def create_app(settings: Settings | None = None, evaluator=None, clock=None, sto
     handlers = ApiHandlers(
         AuthService(store, clock), CaseService(store),
         SimulationService(store, evaluator, clock), ReportService(store),
+        AdminService(store, clock, settings.admin_username, settings.admin_password),
     )
     @asynccontextmanager
     async def lifespan(_app: FastAPI):

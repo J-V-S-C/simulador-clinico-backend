@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
@@ -11,6 +12,11 @@ class RegisterRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     email: EmailStr
+    password: str
+
+
+class AdminLoginRequest(BaseModel):
+    username: str
     password: str
 
 
@@ -61,6 +67,14 @@ class ExperienceFeedback(BaseModel):
     difficulty: int = Field(ge=1, le=5)
     useful_feature: str = Field(default="", max_length=1000)
     improvement: str = Field(default="", max_length=1000)
+
+
+class AdminFeedbackResponse(ExperienceFeedback):
+    simulation_id: str
+    user_id: str
+    user_name: str
+    user_email: str
+    created_at: datetime
 
 
 class InteractionResponse(BaseModel):

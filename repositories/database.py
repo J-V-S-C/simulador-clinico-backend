@@ -27,6 +27,12 @@ class TokenRow(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class AdminTokenRow(Base):
+    __tablename__ = "admin_tokens"
+    hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class CaseRow(Base):
     __tablename__ = "cases"
     id: Mapped[str] = mapped_column(String(36), primary_key=True)

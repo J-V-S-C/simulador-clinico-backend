@@ -10,6 +10,7 @@ from routes.schemas import (
     InteractionResult, LoginRequest, ProtocolResult, RegisterRequest, ReportRequest,
     ReportResponse, ResultResponse, SimulationResponse, SimulationSummary, StartRequest,
     TokenResponse, UserResponse, ErrorResponse, ExperienceFeedback,
+    AdminLoginRequest, AdminFeedbackResponse,
 )
 
 
@@ -21,6 +22,7 @@ def create_router(handlers: ApiHandlers) -> APIRouter:
     })
     owner = Depends(handlers.owner)
     token = Depends(require_token)
+    administrator = Depends(handlers.administrator)
 
     @router.get("/health", response_model=HealthResponse)
     async def health():
@@ -42,6 +44,27 @@ def create_router(handlers: ApiHandlers) -> APIRouter:
     @router.get("/auth/me", response_model=UserResponse)
     async def me(user_id: str = owner):
         return handlers.me(user_id)
+
+    @router.post("/admin/login", response_model=TokenResponse)
+    async def admin_login(body: AdminLoginRequest):
+        return handlers.admin.login(body.username, body.password)
+
+    @router.post("/admin/logout", status_code=204)
+    async def admin_logout(access_token: str = administrator):
+        handlers.admin.logout(access_token)
+        return Response(status_code=204)
+
+    @router.get("/admin/me")
+    async def admin_me(access_token: str = administrator):
+        return {"username": handlers.admin.username}
+
+    @router.get("/admin/accounts", response_model=list[UserResponse])
+    async def admin_accounts(access_token: str = administrator):
+        return handlers.admin.accounts()
+
+    @router.get("/admin/feedback", response_model=list[AdminFeedbackResponse])
+    async def admin_feedback(access_token: str = administrator):
+        return handlers.admin.feedback()
 
     @router.get("/cases", response_model=list[CaseSummary])
     async def cases(user_id: str = owner):

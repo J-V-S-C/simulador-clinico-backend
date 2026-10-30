@@ -2,6 +2,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from services.auth import AuthService
+from services.admin import AdminService
 from services.cases import CaseService
 from ports.errors import ServiceError
 from services.reports import ReportService
@@ -18,11 +19,18 @@ async def require_token(credentials: HTTPAuthorizationCredentials | None = Depen
 
 
 class ApiHandlers:
-    def __init__(self, auth: AuthService, cases: CaseService, simulations: SimulationService, reports: ReportService):
+    def __init__(self, auth: AuthService, cases: CaseService, simulations: SimulationService, reports: ReportService, admin: AdminService | None = None):
         self.auth = auth
         self.cases = cases
         self.simulations = simulations
         self.reports = reports
+        self.admin = admin
+
+    async def administrator(self, token: str = Depends(require_token)) -> str:
+        if self.admin is None:
+            raise ServiceError("unauthorized", "Autenticação necessária.", 401)
+        self.admin.authenticate(token)
+        return token
 
     async def owner(self, token: str = Depends(require_token)) -> str:
         return self.auth.authenticate(token)
