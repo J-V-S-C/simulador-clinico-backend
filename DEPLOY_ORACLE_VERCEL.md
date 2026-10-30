@@ -19,9 +19,12 @@ Esta é a opção inicial para um projeto educacional pequeno: Next.js na Vercel
    GEMINI_API_KEY=sua_chave_privada
    GEMINI_MODEL=gemini-3.5-flash-lite
    ALLOWED_ORIGINS=https://seu-projeto.vercel.app
+   ADMIN_USERNAME=admin123
+   ADMIN_PASSWORD=uma_senha_longa_e_exclusiva
    ```
 
    Guarde o arquivo com permissão restrita. A URL SQLite absoluta tem **quatro barras** depois de `sqlite:`. O backend aplica migrações e prepara os casos ao iniciar. O banco nunca deve ficar no disco temporário de contêiner nem em um compartilhamento de rede.
+   A senha administrativa acima é apenas um exemplo: substitua-a na VPS, mantenha `.env` fora do Git e reinicie o serviço após alterá-la. A rota `/admin/entrar` da interface usa essas credenciais para consultar contas e avaliações.
 4. Crie um serviço `systemd` com `WorkingDirectory=/opt/simulador/backend`, `User=` definido como o usuário que tem acesso ao código e ao banco, `ExecStart=/opt/simulador/backend/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000 --workers 1` e `Restart=always`. Não use `--reload` em produção. Verifique `curl http://127.0.0.1:8000/api/health` na VM.
 5. Aponte um nome DNS para o IP público da VM e publique HTTPS em 443. Para manter tudo sem custo, um subdomínio gratuito do [Duck DNS](https://www.duckdns.org/about.jsp) pode apontar para o IP da VM. Exemplo de bloco do Caddyfile:
 

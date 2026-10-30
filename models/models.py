@@ -94,7 +94,9 @@ class Protocol:
     """Conteúdo clínico apresentado progressivamente e usado na avaliação.
 
     A orientação e a ajuda podem ser apresentadas ao estudante. A resposta
-    esperada é a fonte da verdade enviada à LLM para avaliar a conduta.
+    esperada é a fonte da verdade enviada à LLM para avaliar a conduta. As
+    ações essenciais separam o núcleo clínico da conduta das orientações de
+    seguimento, para que a avaliação não exija copiar a frase do protocolo.
     """
 
     def __init__(
@@ -103,6 +105,7 @@ class Protocol:
         orientation_content: str,
         help_content: str,
         expected_response: str,
+        essential_actions: Optional[List[List[str]]] = None,
         correct_effect: Optional[ClinicalEffect] = None,
         partially_correct_effect: Optional[ClinicalEffect] = None,
         incorrect_effect: Optional[ClinicalEffect] = None,
@@ -112,6 +115,11 @@ class Protocol:
         self.orientation_content = orientation_content
         self.help_content = help_content
         self.expected_response = expected_response
+        # Each inner list is a group of equivalent word forms. The student must
+        # cover at least one form from every group; wording and order are free.
+        self.essential_actions = [
+            [str(term) for term in group] for group in (essential_actions or [])
+        ]
         self.correct_effect = correct_effect or ClinicalEffect()
         self.partially_correct_effect = partially_correct_effect or ClinicalEffect()
         self.incorrect_effect = incorrect_effect or ClinicalEffect()

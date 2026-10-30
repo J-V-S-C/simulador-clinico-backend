@@ -50,12 +50,20 @@ def clinical_effect_from_dictionary(data: dict[str, object]) -> ClinicalEffect:
     )
 
 
+def action_groups_from_value(value: object) -> list[list[str]]:
+    return [
+        [str(term) for term in read_list(group)]
+        for group in read_list(value)
+    ]
+
+
 def protocol_to_dictionary(protocol: Protocol) -> dict[str, object]:
     return {
         "name": protocol.name,
         "orientation_content": protocol.orientation_content,
         "help_content": protocol.help_content,
         "expected_response": protocol.expected_response,
+        "essential_actions": [list(group) for group in protocol.essential_actions],
         "correct_effect": clinical_effect_to_dictionary(protocol.correct_effect),
         "partially_correct_effect": clinical_effect_to_dictionary(
             protocol.partially_correct_effect
@@ -71,6 +79,7 @@ def protocol_from_dictionary(data: dict[str, object]) -> Protocol:
         orientation_content=str(data.get("orientation_content", "")),
         help_content=str(data.get("help_content", "")),
         expected_response=str(data.get("expected_response", "")),
+        essential_actions=action_groups_from_value(data.get("essential_actions")),
         correct_effect=clinical_effect_from_dictionary(
             read_dictionary(data.get("correct_effect"))
         ),

@@ -5,7 +5,7 @@ from datetime import timedelta
 
 import pytest
 
-from models import InteractionClassification, is_assessment_only
+from models import InteractionClassification, Protocol, is_assessment_only
 from ports.evaluator import Evaluation
 from ports.errors import ServiceError
 from services.simulations import SimulationService
@@ -168,6 +168,36 @@ def test_incomplete_level_three_conduct_remains_partial(store, clock, evaluator)
     state = asyncio.run(service.interact(OWNER, simulation_id, "Administrar", SYMPTOM))["simulation"]
 
     assert state["interactions"][0]["classification"] == "partially_correct"
+
+
+def test_essential_actions_accept_the_core_in_the_students_own_words():
+    congestion = Protocol(
+        "Congestão nasal",
+        "Pergunte há quanto tempo o nariz está entupido.",
+        "Inalar vapor e usar descongestionante nasal por até 7 dias.",
+        "Orientar repouso e hidratação, reavaliar a congestão e buscar avaliação médica se houver falta de ar ou piora.",
+        essential_actions=[
+            ["repouso", "repousar", "repouse"],
+            ["hidratacao", "hidratar", "liquidos", "agua"],
+        ],
+    )
+
+    assert SimulationService._covers_essential_actions("Oriento o repouso e hidratação", congestion)
+    assert SimulationService._covers_essential_actions("3. Repouso e hidratação.", congestion)
+    assert not SimulationService._covers_essential_actions("Oriento apenas repouso", congestion)
+
+
+def test_essential_actions_keep_the_protocol_specific_to_the_symptom():
+    sore_throat = Protocol(
+        "Dor de garganta",
+        "Pergunte se a dor piora ao engolir.",
+        "Gargarejo com água morna e sal.",
+        "Orientar gargarejo com água morna e sal e beber bastante água.",
+        essential_actions=[["gargarejo", "gargarejar"]],
+    )
+
+    assert SimulationService._covers_essential_actions("Gargarejo com água morna e sal", sore_throat)
+    assert not SimulationService._covers_essential_actions("Oriento repouso e hidratação", sore_throat)
 
 
 @pytest.mark.parametrize("message", [

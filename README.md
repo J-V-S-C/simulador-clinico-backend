@@ -2,6 +2,8 @@
 
 Backend do MVP funcional do Challenge FIAP + Hospital Moinhos de Vento. A API recebe ações do estudante, aplica as regras da simulação, consulta o Gemini para gerar e avaliar a resposta do paciente virtual, salva a tentativa e devolve ao frontend o estado atualizado e o resultado. Os casos e pacientes são fictícios; o sistema tem finalidade educacional.
 
+**Problema atendido:** na leitura de um caso estático, o estudante não experimenta a sequência de decisões, a passagem do tempo e a mudança do paciente. A API torna esse percurso interativo e guarda cada tentativa para que ela possa ser retomada e revisada. Ela não fornece orientação para pacientes reais.
+
 **API publicada pela equipe:** [documentação interativa na VPS Oracle](https://clinical-simulator-api.duckdns.org/docs) · [verificação de saúde](https://clinical-simulator-api.duckdns.org/api/health)
 
 **Código:** [backend](https://github.com/J-V-S-C/simulador-critico-backend) · [frontend](https://github.com/J-V-S-C/Simulador-clinico-front)
@@ -28,6 +30,8 @@ Após cada tentativa encerrada, o estudante pode avaliar a experiência. O scrip
 - **SQLAlchemy e Alembic:** persistência e migrações. SQLite é o padrão; PostgreSQL pode ser configurado por `DATABASE_URL`.
 - **SDK oficial `google-genai`:** fala do paciente e avaliação da interação, com saída validada antes de alterar o estado clínico.
 - **Pytest:** testes de autenticação, casos, simulações, relatórios, feedback e persistência SQL.
+
+Essas escolhas também definem responsabilidades: o navegador apresenta os dados; o Python valida e decide a evolução; o banco preserva contas, tentativas e avaliações; o Gemini contribui com texto e avaliação, mas sua saída é conferida antes de mudar o estado. `ports/` permite trocar relógio, avaliador e armazenamento em testes. SQLite simplifica a instalação atual em uma VPS; se houver muitas gravações simultâneas ou mais de uma instância da API, a equipe terá de reavaliar o banco. As decisões completas, incluindo a interface, estão no [documento de arquitetura do frontend](https://github.com/J-V-S-C/Simulador-clinico-front/blob/main/docs/IMPLEMENTATION_PLAN.md).
 
 | Diretório ou arquivo | Responsabilidade |
 | --- | --- |
@@ -64,6 +68,7 @@ Acesse `http://127.0.0.1:8000/docs` ou consulte `http://127.0.0.1:8000/api/healt
 | `GEMINI_TIMEOUT_SECONDS` | Tempo limite da chamada ao Gemini; padrão de 15 segundos. |
 | `DATABASE_URL` | Banco SQL; por padrão, SQLite em `backend/data/clinical.db`. |
 | `ALLOWED_ORIGINS` | Origens exatas do frontend aceitas pelo CORS, separadas por vírgula. |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Credenciais do administrador, definidas somente no servidor. Ambas são necessárias para o login administrativo. |
 
 Na inicialização, o servidor aplica as migrações Alembic, importa de forma idempotente CSV legados disponíveis em `data/` e atualiza os modelos de casos. Novas tentativas são salvas no banco SQL; tentativas já iniciadas preservam o caso gravado na criação.
 
@@ -108,7 +113,7 @@ Os esquemas completos estão no [OpenAPI publicado](https://clinical-simulator-a
 .venv/bin/python feedback_summary.py
 ```
 
-O primeiro comando executa a suíte sem depender de chave Gemini real; nesta revisão, **67 testes passaram**. O segundo lê o banco definido em `DATABASE_URL` e imprime o resumo das avaliações coletadas. Revise comentários livres antes de divulgá-los e compartilhe dados agregados.
+O primeiro comando executa a suíte sem depender de chave Gemini real; a última execução registrada durante a implementação do acesso administrativo teve **68 testes aprovados**. Execute novamente no ambiente da entrega. O segundo lê o banco definido em `DATABASE_URL` e imprime o resumo das avaliações coletadas. Revise comentários livres antes de divulgá-los e compartilhe dados agregados.
 
 ## Publicação na VPS Oracle
 
@@ -117,6 +122,8 @@ A API publicada pela equipe usa o domínio `clinical-simulator-api.duckdns.org`.
 Faça backups consistentes do SQLite com `.backup`; copiar apenas um `.db` em uso pode perder alterações presentes no WAL. Para o roteiro de infraestrutura, consulte [DEPLOY_ORACLE_VERCEL.md](DEPLOY_ORACLE_VERCEL.md). SQLite atende a uma VPS única com tráfego moderado; concorrência alta ou múltiplas instâncias de API exigem reavaliar o banco e os limites de requisições.
 
 **Segurança da publicação:** senhas são armazenadas como hash, os tokens persistidos também são hashes e o acesso às tentativas exige autenticação e vínculo com o proprietário. Chaves e banco local estão fora do Git pelo `.gitignore`. A API ainda não implementa limite de requisições para cadastro, login e chamadas ao Gemini; configure esse limite no proxy ou na aplicação para reduzir tentativas de força bruta e consumo indevido da cota de IA.
-# Administrator access
+## Acesso administrativo
 
-Set `ADMIN_USERNAME=admin123` and a long, unique `ADMIN_PASSWORD` in `backend/.env` (see `backend/.env.example`). Both settings must be present for admin login. Visit `/admin/entrar` in the frontend to review all registered student accounts and their submitted experience feedback. The API provides `POST /api/admin/login`, `POST /api/admin/logout`, `GET /api/admin/accounts`, and `GET /api/admin/feedback`; all read endpoints require the separate admin bearer token. Admin sessions expire after eight hours and logout revokes them. Student sessions cannot access these endpoints. The disabled legacy import account is omitted from the account list.
+Configure `ADMIN_USERNAME=admin123` e uma senha longa e exclusiva em `ADMIN_PASSWORD` no arquivo `.env` do **servidor**; [`.env.example`](.env.example) mostra o formato. As duas variáveis precisam estar presentes. A senha real não deve ser enviada ao Git nem incluída em documentos de entrega.
+
+Na interface, `/admin/entrar` abre o acesso a todas as contas estudantis cadastradas e aos feedbacks enviados. A API oferece `POST /api/admin/login`, `POST /api/admin/logout`, `GET /api/admin/accounts` e `GET /api/admin/feedback`. As consultas exigem um token próprio de administrador, com validade de oito horas; sair revoga a sessão. Um token de estudante não dá acesso a esses dados. A conta legada de importação, desativada, não aparece na lista de estudantes.

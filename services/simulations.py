@@ -148,7 +148,7 @@ class SimulationService:
                 InteractionClassification.ASSESSMENT
                 if is_assessment_only(student_text)
                 else InteractionClassification.CORRECT
-                if self._matches_expected_conduct(student_text, symptom.protocol.expected_response)
+                if self._covers_essential_actions(student_text, symptom.protocol)
                 else evaluation.classification
             )
             interaction = saved.simulation.register_interaction(
@@ -164,16 +164,39 @@ class SimulationService:
             return {"interaction_id": interaction.id, "simulation": self._view(saved)}
 
     @staticmethod
-    def _matches_expected_conduct(student_text: str, expected_response: str) -> bool:
-        """An exact level-3 answer must not be downgraded by a variable evaluator."""
+    def _normalized_words(value: str) -> list[str]:
+        plain = unicodedata.normalize("NFKD", value.casefold())
+        plain = "".join(char for char in plain if not unicodedata.combining(char))
+        return re.findall(r"[a-z0-9]+", plain)
+
+    @classmethod
+    def _term_present(cls, term: str, words: list[str]) -> bool:
+        term_words = cls._normalized_words(term)
+        if not term_words:
+            return False
+        if len(term_words) == 1:
+            return term_words[0] in words
+        return f" {' '.join(term_words)} " in f" {' '.join(words)} "
+
+    @classmethod
+    def _covers_essential_actions(cls, student_text: str, protocol) -> bool:
+        """Accept the clinical core in the student's own words.
+
+        Each essential-action group lists equivalent word forms; one form per
+        group is enough. Follow-up and safety-net advice remain in the protocol
+        text but are not required to resolve the complaint. Legacy protocols
+        without groups keep the exact-match safeguard.
+        """
         answer = re.sub(r"^\s*3\s*[.)]\s*", "", student_text)
-
-        def words(value: str) -> list[str]:
-            plain = unicodedata.normalize("NFKD", value.casefold())
-            plain = "".join(char for char in plain if not unicodedata.combining(char))
-            return re.findall(r"[a-z0-9]+", plain)
-
-        return bool(words(answer)) and words(answer) == words(expected_response)
+        words = cls._normalized_words(answer)
+        if not words:
+            return False
+        if protocol.essential_actions:
+            return all(
+                any(cls._term_present(term, words) for term in group)
+                for group in protocol.essential_actions
+            )
+        return words == cls._normalized_words(protocol.expected_response)
 
     @staticmethod
     def _reject_repeated_conduct(simulation: Simulation, student_text: str) -> None:
