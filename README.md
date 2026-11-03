@@ -16,7 +16,7 @@ Backend do MVP funcional do Challenge FIAP + Hospital Moinhos de Vento. A API re
 | --- | --- |
 | Modelagem e manipulação de dados | `models/` define caso, paciente, sintomas, sinais vitais, interações, protocolos e resultado. `repositories/` converte esses objetos em dados persistidos e os lê de volta. |
 | Funções e módulos do fluxo principal | `services/` implementa cadastro, escolha de caso, início da tentativa, ações, evolução temporal, encerramento, resultado e relatos de respostas. |
-| Integração com a solução visual | O frontend Next.js usa a API FastAPI para enviar ações e exibir o estado salvo. O percurso navegador → API → banco → navegador está registrado na [validação do frontend](https://github.com/J-V-S-C/Simulador-clinico-front/blob/main/docs/VALIDATION.md). |
+| Integração com a solução visual | O frontend Next.js usa a API FastAPI para enviar ações e exibir o estado salvo. O percurso navegador → API → banco → navegador e as formas de verificá-lo estão descritos em [Evidências de execução da aplicação final](#evidências-de-execução-da-aplicação-final). |
 | Organização, documentação e testes | Os contratos ficam em `routes/schemas.py`, as rotas em `routes/api.py` e os testes em `tests/`. Este README explica instalação, execução e verificação. |
 
 O banco guarda contas e hashes de senha, hashes dos tokens de acesso, modelos de casos, tentativas com o estado clínico e histórico, relatos de respostas e avaliações da experiência. A tentativa pertence a uma conta; as consultas e alterações usam esse vínculo. O SQLite é o armazenamento local padrão, com migrações Alembic. O CSV de casos em `data/diseases.csv` é uma fonte legada importada na inicialização; novas tentativas são gravadas no banco SQL.
@@ -31,7 +31,7 @@ Após cada tentativa encerrada, o estudante pode avaliar a experiência. O scrip
 - **SDK oficial `google-genai`:** fala do paciente e avaliação da interação, com saída validada antes de alterar o estado clínico.
 - **Pytest:** testes de autenticação, casos, simulações, relatórios, feedback e persistência SQL.
 
-Essas escolhas também definem responsabilidades: o navegador apresenta os dados; o Python valida e decide a evolução; o banco preserva contas, tentativas e avaliações; o Gemini contribui com texto e avaliação, mas sua saída é conferida antes de mudar o estado. `ports/` permite trocar relógio, avaliador e armazenamento em testes. SQLite simplifica a instalação atual em uma VPS; se houver muitas gravações simultâneas ou mais de uma instância da API, a equipe terá de reavaliar o banco. As decisões completas, incluindo a interface, estão no [documento de arquitetura do frontend](https://github.com/J-V-S-C/Simulador-clinico-front/blob/main/docs/IMPLEMENTATION_PLAN.md).
+Essas escolhas também definem responsabilidades: o navegador apresenta os dados; o Python valida e decide a evolução; o banco preserva contas, tentativas e avaliações; o Gemini contribui com texto e avaliação, mas sua saída é conferida antes de mudar o estado. `ports/` permite trocar relógio, avaliador e armazenamento em testes. SQLite simplifica a instalação atual em uma VPS; se houver muitas gravações simultâneas ou mais de uma instância da API, a equipe terá de reavaliar o banco. A integração e seus limites estão resumidos no [README do frontend](https://github.com/J-V-S-C/Simulador-clinico-front#readme).
 
 | Diretório ou arquivo | Responsabilidade |
 | --- | --- |
@@ -113,7 +113,20 @@ Os esquemas completos estão no [OpenAPI publicado](https://clinical-simulator-a
 .venv/bin/python feedback_summary.py
 ```
 
-O primeiro comando executa a suíte sem depender de chave Gemini real; a última execução registrada durante a implementação do acesso administrativo teve **68 testes aprovados**. Execute novamente no ambiente da entrega. O segundo lê o banco definido em `DATABASE_URL` e imprime o resumo das avaliações coletadas. Revise comentários livres antes de divulgá-los e compartilhe dados agregados.
+O primeiro comando executa a suíte sem depender de chave Gemini real; em 03/11/2026, **70 testes passaram** no ambiente local. O segundo lê o banco definido em `DATABASE_URL` e imprime o resumo das avaliações coletadas. Revise comentários livres antes de divulgá-los e compartilhe dados agregados.
+
+## Evidências de execução da aplicação final
+
+O produto publicado pela equipe pode ser percorrido na [interface em produção](https://simulador-clinico-front.vercel.app). A [documentação da API](https://clinical-simulator-api.duckdns.org/docs) mostra as rotas disponíveis, e a [rota de saúde](https://clinical-simulator-api.duckdns.org/api/health) permite consultar a disponibilidade da API e do banco. Estes são os endereços informados pela equipe; a execução dos testes abaixo foi verificada localmente, sem depender da disponibilidade da rede pública.
+
+| Etapa observável | Evidência no produto ou no código |
+| --- | --- |
+| Entrada e seleção do caso | O estudante cria uma conta na interface, entra e escolhe um caso; o frontend chama `/api/auth/register`, `/api/auth/login` e `/api/cases`. |
+| Ação enviada e processada | Durante o atendimento, o frontend envia o texto a `/api/simulations/{id}/interactions` ou à variante `/stream`. `SimulationService` valida a ação, aplica as regras de tempo e evolução e grava a interação pelo `SqlStore`. |
+| Resultado salvo e exibido | O frontend consulta `/api/simulations/{id}/result`; `tests/test_case_flow_sql.py` verifica que uma tentativa concluída e seu resultado continuam disponíveis após uma nova leitura do SQLite. |
+| Uso real e avaliações | O painel administrativo compartilhado pela equipe em 03/11/2026 mostrava **47 contas cadastradas e 54 avaliações enviadas**. Uma conta pode avaliar mais de uma tentativa; esses totais não representam 54 pessoas distintas. O [registro de feedback e melhorias](https://github.com/J-V-S-C/Simulador-clinico-front/blob/main/MELHORIAS_FEEDBACK.md) apresenta somente dados agregados. |
+
+Para reproduzir a verificação local da lógica e persistência, execute `.venv/bin/python -m pytest -q tests` a partir de `backend/`. Resultado obtido em 03/11/2026: **70 passed**, com um aviso de depreciação em uma dependência do SDK Gemini. O teste integrado `tests/test_case_flow_sql.py` usa um avaliador falso e banco SQLite temporário: confirma início, duas interações, encerramento e leitura posterior do resultado. Ele não prova o comportamento da IA real nem substitui abrir o fluxo na versão publicada.
 
 ## Publicação na VPS Oracle
 
